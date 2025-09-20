@@ -1,5 +1,6 @@
-from airflow import DAG
+from airflow.models import DAG
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 
 default_args = {
@@ -13,21 +14,25 @@ with DAG(
     schedule_interval=None,
     catchup=False,
 ) as dag:
-
-    # Скачивание данных
-    download_data = BashOperator(
-        task_id='download_data',
-        bash_command=(
-            'mkdir -p ~/project/data/full_dataset && '
-            'wget -P ~/project/data/full_dataset https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_1.csv && '
-            'wget -P ~/project/data/full_dataset https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_2.csv && '
-            'wget -P ~/project/data/full_dataset https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_3.csv'
-        )
+    install_deps = BashOperator(
+        task_id='install_dependencies',
+        bash_command='pip install iterative-stratification'
     )
 
-    preprocess = BashOperator(
+    # download_data = BashOperator(
+    #     task_id='download_data',
+    #     bash_command=(
+    #         'mkdir -p /opt/airflow/data/full_dataset && '
+    #         'curl -o /opt/airflow/data/full_dataset/goemotions_1.csv https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_1.csv && '
+    #         'curl -o /opt/airflow/data/full_dataset/goemotions_2.csv https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_2.csv && '
+    #         'curl -o /opt/airflow/data/full_dataset/goemotions_3.csv https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_3.csv'
+    #     )
+    # )
+
+    preprocess_data = BashOperator(
         task_id='preprocess_data',
-        bash_command='jupyter nbconvert --to notebook --execute ~/project/notebooks/preprocess.ipynb --output ~/project/notebooks/preprocess_out.ipynb'
+        bash_command='cd /opt/airflow/code/datasets && python prepare_emotions_datasets_script.py --data_dir /opt/airflow/data/full_dataset --output_dir /opt/airflow/data/processed'
     )
 
-    download_data >> preprocess
+    # download_data >> preprocess_data
+    install_deps >> preprocess_data
