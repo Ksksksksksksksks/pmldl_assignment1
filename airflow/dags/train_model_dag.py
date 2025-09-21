@@ -2,10 +2,11 @@ from airflow.models import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 import subprocess
+import os
 
 default_args = {'owner': 'ksusha', 'start_date': days_ago(1)}
 
-MODEL_PATH = "/opt/airflow/code/models/goemotions_model.pkl"
+MODEL_PATH = "/opt/airflow/mlruns/goemotions_model.pkl"
 
 def train_model_task():
     subprocess.run(
@@ -14,14 +15,12 @@ def train_model_task():
     )
 
 def push_to_dvc_task():
-    subprocess.run(
-        ["dvc", "add", MODEL_PATH],
-        check=True
-    )
-    subprocess.run(
-        ["dvc", "push"],
-        check=True
-    )
+    if os.path.exists(MODEL_PATH):
+        subprocess.run(["dvc", "add", MODEL_PATH], check=True)
+        subprocess.run(["dvc", "push"], check=True)
+    else:
+        raise FileNotFoundError(f"Model not found here: {MODEL_PATH}")
+
 
 with DAG(
     dag_id='goemotions_train_model',

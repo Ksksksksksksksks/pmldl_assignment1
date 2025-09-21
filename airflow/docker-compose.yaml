@@ -24,6 +24,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
+      - ../mlruns:/opt/airflow/mlruns
     user: "50000:0"
     depends_on:
       - postgres
@@ -31,6 +32,7 @@ services:
     command:
       - -c
       - |
+        airflow db reset --yes && \
         airflow db init && \
         airflow users create \
           --username admin \
@@ -58,6 +60,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
+      - ../mlruns:/opt/airflow/mlruns
     ports:
       - "8080:8080"
     command: airflow webserver
@@ -81,6 +84,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
+      - ../mlruns:/opt/airflow/mlruns
     command: airflow scheduler
     user: "50000:0"
 

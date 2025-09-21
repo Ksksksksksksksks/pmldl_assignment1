@@ -10,9 +10,11 @@ import mlflow.sklearn
 
 mlflow.set_tracking_uri("http://mlflow:5000")
 
-# Пути
 DATA_DIR = os.environ.get("DATA_DIR", "/opt/airflow/data/processed")
-MODEL_DIR = os.environ.get("MODEL_DIR", "/opt/airflow/code/models")
+MODEL_DIR = os.environ.get("MODEL_DIR", "/opt/airflow/mlruns")
+MLFLOW_MODEL_DIR = os.path.join(MODEL_DIR, "model")
+os.makedirs(MLFLOW_MODEL_DIR, exist_ok=True)
+
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 TRAIN_FILE = os.path.join(DATA_DIR, "train.tsv")
@@ -21,6 +23,7 @@ SELECTED_EMS = ['anger', 'confusion', 'disgust', 'excitement',
                 'fear', 'joy', 'love', 'sadness', 'neutral']
 
 MODEL_PATH = os.path.join(MODEL_DIR, "goemotions_model.pkl")
+LOCAL_MODEL_PATH = os.path.join(MODEL_DIR, "goemotions_model.pkl")
 
 train_df = pd.read_csv(TRAIN_FILE, sep="\t")
 test_df = pd.read_csv(TEST_FILE, sep="\t")
@@ -51,9 +54,7 @@ with mlflow.start_run():
 
     mlflow.log_metric("f1_weighted", f1)
 
-    mlflow.sklearn.log_model(model, "model")
+    mlflow.sklearn.log_model(model, artifact_path="model")   # не нужно mlflow.log_artifact(LOCAL_MODEL_PATH)
 
-    joblib.dump({"model": model, "vectorizer": vectorizer}, MODEL_PATH)
-
-    # Логируем артефакт в MLflow
+    joblib.dump({"model": model, "vectorizer": vectorizer}, LOCAL_MODEL_PATH)
     mlflow.log_artifact(MODEL_PATH)
