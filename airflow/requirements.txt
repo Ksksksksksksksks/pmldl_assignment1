@@ -1,4 +1,5 @@
 scikit-learn
 pandas
 numpy
-mlflow
+mlflow==3.4.0
+dvc

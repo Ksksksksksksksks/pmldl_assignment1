@@ -18,13 +18,15 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
-      - ../mlruns:/opt/airflow/mlruns
+      - ../:/opt/airflow
+#      - ../mlruns:/opt/airflow/mlruns
     user: "50000:0"
     depends_on:
       - postgres
@@ -32,6 +34,7 @@ services:
     command:
       - -c
       - |
+        apt-get update && apt-get install -y git \
         airflow db reset --yes && \
         airflow db init && \
         airflow users create \
@@ -54,13 +57,15 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
-      - ../mlruns:/opt/airflow/mlruns
+      - ../:/opt/airflow
+#      - ../mlruns:/opt/airflow/mlruns
     ports:
       - "8080:8080"
     command: airflow webserver
@@ -78,28 +83,31 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
-      - ../mlruns:/opt/airflow/mlruns
+      - ../:/opt/airflow
+#      - ../mlruns:/opt/airflow/mlruns
     command: airflow scheduler
     user: "50000:0"
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.5.0
+    image: ghcr.io/mlflow/mlflow:v3.4.0
     ports:
       - "5000:5000"
     volumes:
-      - ./mlruns:/mlflow/mlruns
-    environment:
-      - MLFLOW_TRACKING_URI=file:///mlflow/mlruns
+      - ./mlruns:/opt/airflow/mlruns
+#      - ./mlflow:/mlflow
+#    environment:
+#      - MLFLOW_TRACKING_URI=http://mlflow:5000
     command: >
       mlflow server 
-      --backend-store-uri sqlite:///mlflow/mlflow.db 
-      --default-artifact-root /mlflow/mlruns 
+      --backend-store-uri sqlite:///opt/airflow/mlruns/mlflow.db
+      --default-artifact-root /opt/airflow/mlruns 
       --host 0.0.0.0 
       --port 5000
 
