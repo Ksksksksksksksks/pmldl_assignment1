@@ -7,7 +7,7 @@ import requests
 
 default_args = {'owner': 'ksusha', 'start_date': days_ago(1)}
 
-MODEL_PATH = "/opt/airflow/mlruns/goemotions_model.pkl"
+MODEL_PATH = "/opt/airflow/mlruns/goemotions_final_model.pkl"
 MLFLOW_URI = "http://mlflow:5000"
 
 def check_mlflow_task():

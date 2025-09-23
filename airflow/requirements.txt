@@ -3,3 +3,4 @@ pandas
 numpy
 mlflow==3.4.0
 dvc
+itertools
