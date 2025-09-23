@@ -2,6 +2,7 @@ from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 default_args = {
     'owner': 'ksusha',
@@ -23,6 +24,10 @@ with DAG(
         task_id='preprocess_data',
         bash_command='cd /opt/airflow/code/datasets && python prepare_emotions_datasets_script.py --data_dir /opt/airflow/data/full_dataset --output_dir /opt/airflow/data/processed'
     )
+    trigger_training = TriggerDagRunOperator(
+        task_id='trigger_model_training',
+        trigger_dag_id='goemotions_train_model',
+    )
 
     # download_data >> preprocess_data
-    install_deps >> preprocess_data
+    install_deps >> preprocess_data >> trigger_training

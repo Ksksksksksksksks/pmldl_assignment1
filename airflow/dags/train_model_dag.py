@@ -6,6 +6,7 @@ import os
 import requests
 import shutil
 from airflow.sensors.filesystem import FileSensor
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 default_args = {'owner': 'ksusha', 'start_date': days_ago(1)}
 
@@ -78,6 +79,10 @@ with DAG(
         task_id="save_final_model",
         python_callable=save_final_model
     )
+    trigger_deployment = TriggerDagRunOperator(
+        task_id='trigger_deployment',
+        trigger_dag_id='deploy_services',
+    )
 
 
-    wait_data >> check_mlflow >> train_model >> push_to_dvc >> save_best_model
+    wait_data >> check_mlflow >> train_model >> push_to_dvc >> save_best_model >> trigger_deployment
