@@ -19,16 +19,6 @@ with DAG(
         bash_command='pip install iterative-stratification'
     )
 
-    # download_data = BashOperator(
-    #     task_id='download_data',
-    #     bash_command=(
-    #         'mkdir -p /opt/airflow/data/full_dataset && '
-    #         'curl -o /opt/airflow/data/full_dataset/goemotions_1.csv https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_1.csv && '
-    #         'curl -o /opt/airflow/data/full_dataset/goemotions_2.csv https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_2.csv && '
-    #         'curl -o /opt/airflow/data/full_dataset/goemotions_3.csv https://storage.googleapis.com/gresearch/goemotions/data/full_dataset/goemotions_3.csv'
-    #     )
-    # )
-
     preprocess_data = BashOperator(
         task_id='preprocess_data',
         bash_command='cd /opt/airflow/code/datasets && python prepare_emotions_datasets_script.py --data_dir /opt/airflow/data/full_dataset --output_dir /opt/airflow/data/processed'

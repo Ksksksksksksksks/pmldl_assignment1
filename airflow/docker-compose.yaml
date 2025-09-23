@@ -26,7 +26,6 @@ services:
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
       - ../:/opt/airflow
-#      - ../mlruns:/opt/airflow/mlruns
     user: "50000:0"
     depends_on:
       - postgres
@@ -65,7 +64,6 @@ services:
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
       - ../:/opt/airflow
-#      - ../mlruns:/opt/airflow/mlruns
     ports:
       - "8080:8080"
     command: airflow webserver
@@ -91,7 +89,6 @@ services:
       - ../code:/opt/airflow/code
       - ../data:/opt/airflow/data
       - ../:/opt/airflow
-#      - ../mlruns:/opt/airflow/mlruns
     command: airflow scheduler
     user: "50000:0"
 
@@ -101,15 +98,35 @@ services:
       - "5000:5000"
     volumes:
       - ./mlruns:/opt/airflow/mlruns
-#      - ./mlflow:/mlflow
-#    environment:
-#      - MLFLOW_TRACKING_URI=http://mlflow:5000
     command: >
       mlflow server 
       --backend-store-uri sqlite:///opt/airflow/mlruns/mlflow.db
       --default-artifact-root /opt/airflow/mlruns 
       --host 0.0.0.0 
       --port 5000
+
+  model_api:
+    build:
+      context: ../code/deployment/api
+      dockerfile: Dockerfile.api
+    volumes:
+      - ../:/opt/airflow
+    ports:
+      - "8000:8000"
+    depends_on:
+      - webserver
+
+  app:
+    build:
+      context: ../code/deployment/app
+      dockerfile: Dockerfile.app
+    volumes:
+      - ../:/opt/airflow
+    ports:
+      - "8501:8501"
+    depends_on:
+      - model_api
+
 
 volumes:
   postgres-db-volume:
