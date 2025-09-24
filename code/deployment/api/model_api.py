@@ -7,7 +7,7 @@ import time
 app = FastAPI(title="GoEmotions API")
 
 # MODEL_PATH = "/opt/airflow/final_model/cool_model.pkl"
-MODEL_PATH = "cool_model.pkl"
+MODEL_PATH = "/app/final_model/cool_model.pkl"
 
 
 while not os.path.exists(MODEL_PATH):

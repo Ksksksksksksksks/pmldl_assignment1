@@ -20,11 +20,8 @@ def health_check(service, url):
             if response.status_code == 200:
                 print(f"✅ {service} is healthy!")
                 return
-            if response.status_code == 200 and "Enter text for emotion prediction" in response.text:
-                print(f"✅ {service} is healthy!")
-                return
-        except:
-            print(f"Attempt {i+1} for {service} failed")
+        except Exception as e:
+            print(f"Attempt {i+1} for {service} failed: {str(e)}")
             time.sleep(5)
     raise Exception(f"{service} failed to start")
 
@@ -37,48 +34,49 @@ with DAG(
 
     cleanup = BashOperator(
         task_id='cleanup',
-        bash_command="docker rm -f model-api model-app || true"
+        bash_command="docker rm -f model-api model-app 2>/dev/null || true"
+    )
+
+    check_model = BashOperator(
+        task_id='check_model',
+        bash_command="ls -la /opt/airflow/final_model/ && test -f /opt/airflow/final_model/cool_model.pkl && echo '✅ Model exists' || echo '❌ Model not found'",
     )
 
     build_api = BashOperator(
         task_id='build_api',
-        bash_command="docker build --network=host -t model-api -f /opt/airflow/code/deployment/api/Dockerfile.api /opt/airflow/code/deployment/api"
+        bash_command="docker build -t model-api -f /opt/airflow/code/deployment/api/Dockerfile.api /opt/airflow/code/deployment/api",
     )
 
     run_api = BashOperator(
         task_id='run_api',
-        # bash_command="docker run -d --name model-api -p 8000:8000 model-api"
-        bash_command="docker run -d --name model-api --network airflow_default -p 8000:8000 model-api"
+        bash_command="docker run -d --name model-api -p 8000:8000 -v /opt/airflow/final_model:/app/models model-api",
     )
 
     check_api = PythonOperator(
         task_id='check_api',
         python_callable=health_check,
-        # op_kwargs={'service': 'API', 'url': 'http://localhost:8000/health'}
-        # op_kwargs={'service': 'API', 'url': 'http://model-api:8000/health'}
         op_kwargs={'service': 'API', 'url': 'http://localhost:8000/health'}
-
     )
 
     build_app = BashOperator(
         task_id='build_app',
-        # bash_command="docker build -t model-app -f /opt/airflow/code/deployment/app/Dockerfile.app /opt/airflow/code/deployment/app",
-        bash_command="docker run -d --name model-app --network airflow_default -p 8501:8501 model-app"
+        bash_command="docker build -t model-app -f /opt/airflow/code/deployment/app/Dockerfile.app /opt/airflow/code/deployment/app",
     )
 
     run_app = BashOperator(
         task_id='run_app',
-        bash_command="docker run -d --name model-app -p 8501:8501 model-app"
+        bash_command="docker run -d --name model-app -p 8501:8501 -e API_URL=http://host.docker.internal:8000 model-app",
     )
 
     check_app = PythonOperator(
         task_id='check_app',
         python_callable=health_check,
-        # op_kwargs={'service': 'App', 'url': 'http://localhost:8501/health'}
-        # op_kwargs={'service': 'App', 'url': 'http://model-app:8501'}
-        op_kwargs = {'service': 'App', 'url': 'http://localhost:8501'}
-
-
+        op_kwargs={'service': 'App', 'url': 'http://localhost:8501'}
     )
 
-    cleanup >> build_api >> run_api >> check_api >> build_app >> run_app >> check_app
+    check_api_logs = BashOperator(
+        task_id='check_api_logs',
+        bash_command="echo '=== API Container Status ===' && docker ps -a | grep model-api && echo '=== API Container Logs ===' && docker logs model-api --tail 20 || echo 'Container not found'",
+    )
+
+    cleanup >> check_model >> build_api >> run_api >> check_api_logs >> check_api >> build_app >> run_app >> check_app

@@ -7,7 +7,7 @@ API_URL = "http://model_api:8000/predict"
 
 
 # MODEL_PATH = "/opt/airflow/final_model/cool_model.pkl"
-MODEL_PATH = "cool_model.pkl"
+MODEL_PATH = "/app/final_model/cool_model.pkl"
 
 
 
