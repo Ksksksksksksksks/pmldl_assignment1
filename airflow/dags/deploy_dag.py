@@ -44,18 +44,21 @@ with DAG(
 
     run_api = BashOperator(
         task_id='run_api',
-        bash_command="docker run -d --name model-api -p 8000:8000 model-api"
+        # bash_command="docker run -d --name model-api -p 8000:8000 model-api"
+        bash_command="docker run -d --name model-api --network airflow_default -p 8000:8000 model-api"
     )
 
     check_api = PythonOperator(
         task_id='check_api',
         python_callable=health_check,
-        op_kwargs={'service': 'API', 'url': 'http://localhost:8000/health'}
+        # op_kwargs={'service': 'API', 'url': 'http://localhost:8000/health'}
+        op_kwargs={'service': 'API', 'url': 'http://model-api:8000/health'}
     )
 
     build_app = BashOperator(
         task_id='build_app',
-        bash_command="docker build -t model-app -f /opt/airflow/code/deployment/app/Dockerfile.app /opt/airflow/code/deployment/app",
+        # bash_command="docker build -t model-app -f /opt/airflow/code/deployment/app/Dockerfile.app /opt/airflow/code/deployment/app",
+        bash_command="docker run -d --name model-app --network airflow_default -p 8501:8501 model-app"
     )
 
     run_app = BashOperator(
@@ -66,7 +69,9 @@ with DAG(
     check_app = PythonOperator(
         task_id='check_app',
         python_callable=health_check,
-        op_kwargs={'service': 'App', 'url': 'http://localhost:8501/health'}
+        # op_kwargs={'service': 'App', 'url': 'http://localhost:8501/health'}
+        op_kwargs={'service': 'App', 'url': 'http://model-app:8501'}
+
     )
 
     cleanup >> build_api >> run_api >> check_api >> build_app >> run_app >> check_app
