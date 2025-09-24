@@ -104,7 +104,7 @@ Folders created automatically after running DAGs:
 │       └── val.tsv
 ├── mlruns/          # MLflow experiments, runs, and final model
 ├── final_model/     # Final tested model for API predictions
-
+```
 ---
 
 Note: mlruns/ will contain all training runs and the final model, which will later be saved to final_model/ for deployment via API.
