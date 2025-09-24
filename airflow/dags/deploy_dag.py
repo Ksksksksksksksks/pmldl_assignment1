@@ -39,7 +39,7 @@ with DAG(
 
     build_api = BashOperator(
         task_id='build_api',
-        bash_command="docker build -t model-api -f /opt/airflow/code/deployment/api/Dockerfile.api /opt/airflow/code/deployment/api",
+        bash_command="docker build --network=host -t model-api -f /opt/airflow/code/deployment/api/Dockerfile.api /opt/airflow/code/deployment/api"
     )
 
     run_api = BashOperator(

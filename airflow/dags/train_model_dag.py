@@ -8,6 +8,10 @@ import shutil
 from airflow.sensors.filesystem import FileSensor
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
+def unpause_dag(dag_id):
+    subprocess.run(["airflow", "dags", "unpause", dag_id], check=True)
+
+
 default_args = {'owner': 'ksusha', 'start_date': days_ago(1)}
 
 PROCESSED_DATA_FILE = "/opt/airflow/data/processed/train.tsv"
@@ -39,12 +43,19 @@ def train_model_task():
     )
 
 def push_to_dvc_task():
-    if os.path.exists(MODEL_PATH):
-        subprocess.run(["dvc", "add", MODEL_PATH], check=True, cwd="/opt/airflow")
-        subprocess.run(["dvc", "push"], check=True, cwd="/opt/airflow")
-    else:
+    if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(f"Model not found here: {MODEL_PATH}")
 
+    if not os.path.exists("/opt/airflow/.dvc"):
+        subprocess.run(["dvc", "init"], check=True, cwd="/opt/airflow")
+
+    if not os.path.exists("/opt/airflow/.git"):
+        subprocess.run(["git", "init"], check=True, cwd="/opt/airflow")
+        subprocess.run(["git", "add", "."], check=True, cwd="/opt/airflow")
+        subprocess.run(["git", "commit", "-m", "Initial commit for DVC"], check=True, cwd="/opt/airflow")
+
+    subprocess.run(["dvc", "add", MODEL_PATH], check=True, cwd="/opt/airflow")
+    subprocess.run(["dvc", "push"], check=True, cwd="/opt/airflow")
 
 with DAG(
     dag_id='goemotions_train_model',
@@ -79,10 +90,17 @@ with DAG(
         task_id="save_final_model",
         python_callable=save_final_model
     )
+
+    unpause_next = PythonOperator(
+        task_id='unpause_deploy_services',
+        python_callable=unpause_dag,
+        op_args=['deploy_services'],
+    )
+
     trigger_deployment = TriggerDagRunOperator(
         task_id='trigger_deployment',
         trigger_dag_id='deploy_services',
     )
 
 
-    wait_data >> check_mlflow >> train_model >> push_to_dvc >> save_best_model >> trigger_deployment
+    wait_data >> check_mlflow >> train_model >> push_to_dvc >> save_best_model >> unpause_next >> trigger_deployment
