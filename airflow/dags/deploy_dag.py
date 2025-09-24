@@ -20,6 +20,9 @@ def health_check(service, url):
             if response.status_code == 200:
                 print(f"✅ {service} is healthy!")
                 return
+            if response.status_code == 200 and "Enter text for emotion prediction" in response.text:
+                print(f"✅ {service} is healthy!")
+                return
         except:
             print(f"Attempt {i+1} for {service} failed")
             time.sleep(5)
@@ -52,7 +55,9 @@ with DAG(
         task_id='check_api',
         python_callable=health_check,
         # op_kwargs={'service': 'API', 'url': 'http://localhost:8000/health'}
-        op_kwargs={'service': 'API', 'url': 'http://model-api:8000/health'}
+        # op_kwargs={'service': 'API', 'url': 'http://model-api:8000/health'}
+        op_kwargs={'service': 'API', 'url': 'http://localhost:8000/health'}
+
     )
 
     build_app = BashOperator(
@@ -70,7 +75,9 @@ with DAG(
         task_id='check_app',
         python_callable=health_check,
         # op_kwargs={'service': 'App', 'url': 'http://localhost:8501/health'}
-        op_kwargs={'service': 'App', 'url': 'http://model-app:8501'}
+        # op_kwargs={'service': 'App', 'url': 'http://model-app:8501'}
+        op_kwargs = {'service': 'App', 'url': 'http://localhost:8501'}
+
 
     )
 

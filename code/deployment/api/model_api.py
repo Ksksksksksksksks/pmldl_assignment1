@@ -6,7 +6,9 @@ import time
 
 app = FastAPI(title="GoEmotions API")
 
-MODEL_PATH = "/opt/airflow/final_model/cool_model.pkl"
+# MODEL_PATH = "/opt/airflow/final_model/cool_model.pkl"
+MODEL_PATH = "cool_model.pkl"
+
 
 while not os.path.exists(MODEL_PATH):
     print("Model is not ready yet, api is patiently waiting...")
@@ -24,6 +26,9 @@ SELECTED_EMS = ['anger', 'confusion', 'disgust', 'excitement',
 def root():
     return {"message": "GoEmotions API is running. Use POST /predict with {'text': 'your text'}"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/predict")
 def predict(input: TextInput):
