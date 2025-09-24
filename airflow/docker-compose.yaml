@@ -44,7 +44,9 @@ services:
           --firstname Admin \
           --lastname User \
           --role Admin \
-          --email admin@example.com
+          --email admin@example.com && \
+        airflow dags unpause init_mlops_pipeline && \
+        airflow dags trigger init_mlops_pipeline
 
   webserver:
     build:
